@@ -20,8 +20,8 @@ DATABASE_URL = os.getenv(
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Planner: Braucht gutes Reasoning + Stabilität
-# Claude Sonnet 4 ist der Sweet Spot für agentic workflows
-PLANNER_MODEL = os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4")
+# Claude Sonnet 4.5 ist der Sweet Spot für agentic workflows ($3/$15 per 1M tokens)
+PLANNER_MODEL = os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4.5")
 
 # Responder: Nur Text generieren, kann günstiger sein
 # Optionen: gemini-2.5-flash (super günstig), claude-haiku-3.5, gpt-4o-mini

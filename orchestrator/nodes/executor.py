@@ -99,11 +99,18 @@ async def call_n8n_webhook(
             "error": f"Kein Webhook konfiguriert für {tool_name}"
         }
 
-    payload = {
-        "query": context,
-        "user_id": user_id,
-        "channel_id": channel_id,
-    }
+    # Payload bauen - unterschiedliche Agents erwarten unterschiedliche Felder
+    if tool_name == "Reminder-Agent":
+        # Reminder-Agent erwartet "prompt" statt "query"
+        # user_id wird in N8N aus dem ursprünglichen Input geholt
+        payload = {
+            "prompt": context,
+        }
+    else:
+        # Alle anderen Agents erwarten "query"
+        payload = {
+            "query": context,
+        }
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
