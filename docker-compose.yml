@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: orchestrator-db
+    environment:
+      POSTGRES_USER: orchestrator
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orchestrator_secret_123}
+      POSTGRES_DB: orchestrator
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5433:5432"  # 5433 extern um Konflikte zu vermeiden
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestrator -d orchestrator"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==========================================
+  # LangGraph Orchestrator
+  # ==========================================
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orchestrator-api
+    environment:
+      # Database
+      DATABASE_URL: postgresql://orchestrator:${POSTGRES_PASSWORD:-orchestrator_secret_123}@postgres:5432/orchestrator
+
+      # LLM
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+
+      # Optional: Tavily
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+
+      # N8N Webhooks (von .env)
+      WEBHOOK_KALENDER: ${WEBHOOK_KALENDER:-}
+      WEBHOOK_EMAIL: ${WEBHOOK_EMAIL:-}
+      WEBHOOK_DISCORD: ${WEBHOOK_DISCORD:-}
+      WEBHOOK_KONTAKT: ${WEBHOOK_KONTAKT:-}
+      WEBHOOK_MAGICLINE: ${WEBHOOK_MAGICLINE:-}
+      WEBHOOK_REMINDER: ${WEBHOOK_REMINDER:-}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_JSON: ${LOG_JSON:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Logs persistent machen
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # ==========================================
+  # Log Viewer (Optional - Dozzle)
+  # ==========================================
+  log-viewer:
+    image: amir20/dozzle:latest
+    container_name: orchestrator-logs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "9999:8080"
+    environment:
+      DOZZLE_LEVEL: info
+      DOZZLE_TAILSIZE: 300
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

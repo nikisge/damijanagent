@@ -1,0 +1,1813 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe7ecc99-e1e8-4a5e-bdd6-6fce9757b234",
+              "name": "text",
+              "value": "={{ $('input1').item.json.body.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "db55ed56-142d-4be4-a8be-518ead3595d1",
+      "name": "Set 'Text'1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "71edb1a2-701c-4377-a703-e04a35c74ea7",
+      "name": "Transcribe1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        -1600,
+        1744
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "PtcWrJ68JFJ0ggNv",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $('input1').item.json.sorter_id }}"
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2048,
+        1568
+      ],
+      "id": "2cdd37a2-7567-44bc-bacc-be9c4cc61b6e",
+      "name": "Switch1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        1440
+      ],
+      "id": "1d15491e-656a-4fd4-bd0d-6ddb935a74b1",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('input1').item.json.audio_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1840,
+        1744
+      ],
+      "id": "889a4a1b-2bbd-4b2b-9974-5404b6bfba58",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let json = item.json\n  let sorter_id;\n  \n  if (json.body.attachments.length == 0) {\n    if (json.body.content == null) {\n      sorter_id = 0\n    } else {\n      sorter_id = 1\n    }\n  } else {\n    for (let attachment of json.body.attachments) {\n      if (attachment.content_type == \"audio/ogg\") {\n        item.json.audio_url = attachment.url\n      }\n    }\n\n    if (item.json.audio_url) {\n      sorter_id = 2\n    } else {\n      sorter_id = 0\n    }\n  }\n\n  item.json.sorter_id = sorter_id\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2848,
+        1584
+      ],
+      "id": "ca1b65ca-a348-4eee-bcd5-48670bad3e5a",
+      "name": "input1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "00069145-70d5-43be-8218-131fdc487022",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3264,
+        1584
+      ],
+      "id": "64a4b0b8-0415-4a54-b1dd-6de4d887fe84",
+      "name": "Webhook1",
+      "webhookId": "00069145-70d5-43be-8218-131fdc487022"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5f65db63-46fa-467a-b644-370623b46cd5",
+              "leftValue": "={{ $json.body.user_id }}",
+              "rightValue": "1419734963053527130",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "6dc55ee9-91da-4910-b496-beaa32cf9349",
+              "leftValue": "={{ $json.body.user_id }}",
+              "rightValue": "916044467205709825",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "9464cee7-acae-49d8-a6ee-85f9e8c83b1e",
+              "leftValue": "={{ $json.body.user_id }}",
+              "rightValue": "727811599334637627",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3072,
+        1584
+      ],
+      "id": "99d6eaab-8f44-4dd6-a6f3-7e2b7fcdc9e5",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sport-oase.web.magicline.com/login",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client",
+              "value": "webclient"
+            },
+            {
+              "name": "username",
+              "value": "zenit"
+            },
+            {
+              "name": "password",
+              "value": "6eu5SZZp"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2672,
+        1584
+      ],
+      "id": "36653a51-895f-4544-bbe7-692cc6eeccee",
+      "name": "Login/sessioncookie1"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "ML_Cookies",
+          "mode": "list",
+          "cachedResultName": "ML_Cookies"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cookie": "={{ $json.headers[\"set-cookie\"][0] }}",
+            "id": "=67d3fa45-db7c-4c9c-84e5-6ba67bc1825f"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "Cookie",
+              "displayName": "Cookie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2464,
+        1584
+      ],
+      "id": "dee7ebe2-df6a-442a-a7e6-47dfae0398f0",
+      "name": "Insert or update rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "pnMSCrYjtVPCBND2",
+          "name": "Damijan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-sonnet-4.5",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        1808
+      ],
+      "id": "2735c621-cae5-4bac-bd01-48c748e49e2a",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "M5jH7fUpoljQpNiD",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"agents_to_call\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"agent\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"none\",\n              \"Email_Agent\",\n              \"Kalender_Agent\",\n              \"Kontakt_Agent\",\n              \"MagicLine-Agent\",\n              \"Reminder-Agent\",\n              \"Tavily\",\n              \"Discord_Agent\",\n              \"Audio_Summary\"\n            ]\n          },\n          \"context\": {\n            \"type\": \"string\",\n            \"description\": \"Kontext für diesen spezifischen Agent\"\n          }\n        },\n        \"required\": [\"agent\", \"context\"]\n      },\n      \"minItems\": 1,\n      \"description\": \"Liste der Agents die PARALLEL aufgerufen werden\"\n    },\n    \"final_instruction\": {\n      \"type\": \"string\",\n      \"description\": \"Was soll mit den Agent-Ergebnissen gemacht werden?\"\n    },\n    \"needs_clarification\": {\n      \"type\": \"boolean\"\n    },\n    \"clarification_question\": {\n      \"type\": \"string\"\n    },\n    \"reasoning\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"agents_to_call\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -992,
+        1824
+      ],
+      "id": "60e4b71c-fc88-47c2-8dbe-30479a8a44aa",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "W6UwECTHQUB9hD9Z",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/W6UwECTHQUB9hD9Z",
+          "cachedResultName": "SL_Kalender_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        960
+      ],
+      "id": "82e48671-c156-4a58-9e28-0137bf3d011b",
+      "name": "Calendar_Agent"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "FFhvINRjNhu5CvQI",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/FFhvINRjNhu5CvQI",
+          "cachedResultName": "SL_Email_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [
+            "prompt"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        1136
+      ],
+      "id": "def35104-2afa-4aa0-a553-62e925ca2c9d",
+      "name": "Email_Agent1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CyPXgl581ZBVYjuD",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/CyPXgl581ZBVYjuD",
+          "cachedResultName": "SL_Discord_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [
+            "prompt"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        1296
+      ],
+      "id": "97f9a6d6-5cff-4dc7-9920-a513a9733783",
+      "name": "Discord_Agent1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "eYikh2Tx9tuAM5jx",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/eYikh2Tx9tuAM5jx",
+          "cachedResultName": "SL_Kontakt_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [
+            "prompt"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        1472
+      ],
+      "id": "b2c91eab-0e43-4e71-9f0e-fb1da2432f16",
+      "name": "Kontakt_Agent"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "W0IXf247Tw41tKTa",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/W0IXf247Tw41tKTa",
+          "cachedResultName": "SL_Magicline_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        1648
+      ],
+      "id": "0be61106-5cbd-4b1d-9a05-240e2635bb52",
+      "name": "Magicline_Agent"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "lSfL2KBabHf6C8cv",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/lSfL2KBabHf6C8cv",
+          "cachedResultName": "SL_Reminder_Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('input1').item.json.body.user_id }}",
+            "prompt": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        1808
+      ],
+      "id": "f050144d-3e35-4def-a676-1176e54640d2",
+      "name": "Reminder_Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aktuelle Nachricht:\n{{ $json.text }} (- versendet{{ $now }})\n\nChatverlauf (letzte 10 Nachrichten):\n{{JSON.stringify($('get_memory').item.json.messages, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# Deine Rolle\nDu bist der Routing-Assistent von Damijan, einem Fitnessstudiobesitzer. Deine EINZIGE Aufgabe ist zu entscheiden:\n1. Welche spezialisierten Tools seine Anfrage am besten lösen\n2. Den kompletten Kontext an diese Tools weiterzugeben\n3. ODER direkt zu antworten, wenn kein Tool nötig ist\n\nDu führst KEINE Aktionen selbst aus - du entscheidest nur und delegierst.\n\n# Kontext: Discord-Konversation\n**WICHTIG:** Diese gesamte Konversation findet auf Discord statt. Damijan schreibt dir dort und deine Antworten gehen automatisch zurück an ihn auf Discord. Der **Discord_Agent** ist NICHT für Antworten an Damijan, sondern NUR um Nachrichten an ANDERE Personen (Mitarbeiter, Channels) zu senden!\n\n# Verfügbare Tools\n\n- **Email_Agent**: E-Mails senden, entwerfen, suchen\n- **Kalender_Agent**: Termine in Google Kalender (privat) erstellen, ändern, abrufen\n- **Kontakt_Agent**: Kontakte im Adressbuch abrufen, aktualisieren, hinzufügen\n- **MagicLine-Agent**: Geschäftstermine im Fitnessstudio-CRM, Mitarbeiter-Schichten, Aufgaben delegieren, Mitarbeiter Kompetenzen abfragen\n- **Reminder-Agent**: Einmalige Erinnerungen setzen (über Discord)\n- **Tavily**: Websuche für aktuelle Informationen\n- **Discord_Agent**: Nachrichten an ANDERE Personen/Channels senden (NICHT an Damijan - das passiert automatisch!)\n- **Audio_Summary**: Wichtige Nachrichten/Audios speichern (nur wenn Damijan explizit sagt \"speichern\" oder \"wichtig\")\n- **none**: Für normale Konversation ohne Tool-Bedarf (Antwort geht automatisch an Damijan auf Discord)\n\n# Multi-Tool-Nutzung (WICHTIG!)\n\n**Du kannst mehrere Tools gleichzeitig nutzen - ABER sie laufen IMMER PARALLEL!**\n\n**KRITISCHE EINSCHRÄNKUNG:**\n- Alle Agents in `agents_to_call` werden GLEICHZEITIG ausgeführt\n- Ein Agent kann NICHT auf das Ergebnis eines anderen warten\n- Wenn Daten erst geholt und dann verwendet werden sollen, rufe NUR die Daten-Agents auf\n\n**Richtige Multi-Tool-Nutzung:**\n\n✅ PARALLEL MÖGLICH (unabhängige Datenabfragen):\nUser: \"Welche Termine habe ich morgen im Google Kalender und in MagicLine?\"\n→ agents_to_call: [\n    {\"agent\": \"Kalender_Agent\", \"context\": \"Hole alle Termine für den 19.11.2025 aus Google Kalender\"},\n    {\"agent\": \"MagicLine-Agent\", \"context\": \"Hole alle Termine für den 19.11.2025 aus MagicLine\"}\n  ]\n→ final_instruction: \"Fasse beide Terminlisten zusammen und zeige Damijan eine Übersicht\"\n\n✅ PARALLEL MÖGLICH (mehrere Erinnerungen):\nUser: \"Erinnere mich morgen um 9 Uhr an Meeting und um 15 Uhr an Anruf\"\n→ agents_to_call: [\n    {\"agent\": \"Reminder-Agent\", \"context\": \"Setze Reminder: Morgen 9 Uhr - Meeting\"},\n    {\"agent\": \"Reminder-Agent\", \"context\": \"Setze Reminder: Morgen 15 Uhr - Anruf\"}\n  ]\n\n✅ PARALLEL MÖGLICH (Daten holen + Nachricht an Mitarbeiter):\nUser: \"Hole meine Termine und sag Sarah Bescheid über das Meeting\"\n→ agents_to_call: [\n    {\"agent\": \"Kalender_Agent\", \"context\": \"Hole alle Termine für morgen\"},\n    {\"agent\": \"Discord_Agent\", \"context\": \"Sende Nachricht an Sarah: 'Meeting morgen bestätigt'\"}\n  ]\n\n❌ NICHT MÖGLICH (sequenzielle Abhängigkeit):\nUser: \"Suche im Web nach Restaurants und trage den besten als Termin ein\"\n→ FALSCH: [Tavily, Kalender_Agent] parallel\n→ RICHTIG: Nur [Tavily] aufrufen\n→ final_instruction: \"Erstelle einen Kalendertermin mit dem besten Restaurant\"\n\n**Faustregel:**\n- Mehrere Agents NUR wenn sie unabhängig voneinander arbeiten können\n- Bei Abhängigkeiten (A → B): Nur Agent A aufrufen, Rest über `final_instruction` beschreiben\n- Discord_Agent NUR für Nachrichten an andere Personen (nicht an Damijan)\n\n# Entscheidungslogik\n\n**Wann \"none\" wählen:**\n- Allgemeine Fragen (\"Wie geht's?\", \"Was war in Nachricht X?\")\n- Small Talk oder Rückfragen zum bisherigen Gespräch\n- Danksagungen, Bestätigungen\n- Wenn du Damijan direkt antworten willst (geht automatisch per Discord an ihn)\n\n**Wann EIN Tool wählen:**\n- Eine konkrete Aktion ohne Abhängigkeiten\n- Informationsabfrage aus einer Quelle\n\n**Wann MEHRERE Tools wählen:**\n- Mehrere UNABHÄNGIGE Datenabfragen (z.B. Google Kalender UND MagicLine)\n- Mehrere gleichartige Aktionen (z.B. 3 Reminders setzen)\n\n**Wichtig bei Tool-Auswahl:**\n- Gib jedem Tool den **KOMPLETTEN Kontext** für seine spezifische Aufgabe\n- Bei Bezug auf frühere Nachrichten: Füge relevanten Kontext aus Memory hinzu\n- Verändere die Aufgabe NICHT - gib sie 1:1 weiter\n\n**Bei Unklarheit:**\n- Wenn mehrere Tools möglich sind (z.B. \"Nachricht an Michael\" → E-Mail oder Discord?): Setze `needs_clarification: true`\n- Wenn Termin-Art unklar ist (privat oder geschäftlich): Setze `needs_clarification: true`\n\n# Output-Regeln\n\n- Gib NUR JSON aus (kein Freitext davor/danach)\n- Bei `agent: \"none\"` nur ein Agent-Objekt mit direct_response im context\n- Bei allen anderen: Fülle `context` mit dem kompletten Auftrag für jeden Agent\n- Nutze `final_instruction` um zu beschreiben was nach den Agent-Aufrufen passieren soll\n- Sei in direct_response sympathisch und nah an Damijan\n\n# Aktuelle Zeit\nDas aktuelle Datum/Uhrzeit: {{ $now }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1216,
+        1584
+      ],
+      "id": "b6f8c54c-c97d-4aef-b08f-55e65132eb93",
+      "name": "Router"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19VvDwF1ggfRJ9owPM2R3SFWIZC-kHfMWy7v0bTiMREQ",
+          "mode": "list",
+          "cachedResultName": "Damijan_Audio_summ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19VvDwF1ggfRJ9owPM2R3SFWIZC-kHfMWy7v0bTiMREQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tabellenblatt1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19VvDwF1ggfRJ9owPM2R3SFWIZC-kHfMWy7v0bTiMREQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Datum": "={{ $now }}",
+            "Zusammenfassung": "={{ $json.context_for_agent }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Datum",
+              "displayName": "Datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Zusammenfassung",
+              "displayName": "Zusammenfassung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        2160
+      ],
+      "id": "8778a7c5-cfb8-4ba1-b8c4-137a23d478af",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4Xc4sLssHtLRzsi3",
+          "name": "Niklas_sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 9
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        1456
+      ],
+      "id": "51318eba-a86d-438f-919b-852fc4c2cabb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Nachricht von Damijan:\n{{ $if($(\"Set 'Text'1\").isExecuted, $(\"Set 'Text'1\").item.json.text, $(\"Transcribe1\").item.json.text) }}\n\nChatverlauf (letzte 10 nachrichten davor):\n{{JSON.stringify($('get_memory').item.json.messages, null, 2) }}\n\nTool-Ergebnisse:\n{{JSON.stringify($json.Tool_results, null, 2) }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Du bist ein freundlicher, sympathischer Discord-Assistent für Damijan. Deine Aufgabe ist es, die finale Antwort an ihn zu formulieren, basierend auf den ausgeführten \"Tool-Ergebnissen\" und dem Chatverlauf.\n\nDeine Verhaltensregeln:\n1.  **Analyse:** Prüfe die \"Tool-Ergebnisse\".\n    * **Bei Erfolg:** Fasse die gefundenen Informationen (z.B. Kalendereinträge, Websuche) locker und hilfreich zusammen. (z.B. \"Hi Damijan, ich habe nachgesehen: Dein nächster Termin ist...\")\n    * **Bei Fehler:** Sei absolut transparent. Wenn ein Tool fehlgeschlagen ist oder keine Daten gefunden hat, sag das offen, aber nett. (z.B. \"Sorry Damijan, ich konnte leider nicht auf deinen Kalender zugreifen, da gab es einen Fehler.\")\n\n2.  **Tonfall:** Du bist ein Kumpel, kein Roboter. Schreibe nett, hilfsbereit und direkt.\n\n3.  **Kontext:** Nutze den Chatverlauf, um den Zusammenhang zu verstehen, aber die aktuellen Tool-Daten haben Vorrang.\n\n4.  **Output:** Schreibe NUR die Nachricht an Damijan. Keine Einleitungen wie \"Hier ist die Antwort:\" und keine internen Gedanken."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1008,
+        1568
+      ],
+      "id": "8e692f01-83be-4c28-b42f-68538e6e5000",
+      "name": "Antwortgenerierer"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1744
+      ],
+      "id": "773dad79-661c-436b-b88e-ba6fb7802408",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "M5jH7fUpoljQpNiD",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1984,
+        1568
+      ],
+      "id": "a28823a3-5fd2-46f6-a4a7-c415ec232ae4",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Holt sich den Text aus dem Ultimate Assistant Node\nconst text = $('Antwortgenerierer').first().json.text;\n\n// Maximale Zeichenlänge\nconst maxLength = 2000;\n\n// 1. Prüfen, ob der Text überhaupt geteilt werden muss\nif (text.length <= maxLength) {\n  // WICHTIG: Neues Item mit dem Text erstellen, nicht \"items\" zurückgeben!\n  return [{\n    json: {\n      output: text\n    }\n  }];\n}\n\n// 2. Den besten Trennpunkt finden\nlet splitPosition = -1;\nconst chunk = text.substring(0, maxLength);\n\nsplitPosition = chunk.lastIndexOf('.');\nif (splitPosition === -1) {\n  splitPosition = chunk.lastIndexOf('\\n');\n}\nif (splitPosition === -1) {\n  splitPosition = chunk.lastIndexOf(' ');\n}\n\n// 3. Den Text aufteilen\nlet part1;\nlet part2;\n\nif (splitPosition === -1) {\n  part1 = text.substring(0, maxLength);\n  part2 = text.substring(maxLength);\n} else {\n  part1 = text.substring(0, splitPosition + 1);\n  part2 = text.substring(splitPosition + 1);\n}\n\n// 4. Zwei Items zurückgeben\nreturn [\n  {\n    json: {\n      output: part1.trim()\n    }\n  },\n  {\n    json: {\n      output: part2.trim()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        1568
+      ],
+      "id": "e4e595d6-7016-424d-9809-9d9d3a26424f",
+      "name": "Split1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        1568
+      ],
+      "id": "daf0a2ec-95ce-4bde-a6fc-4138275fc139",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO n8n_chat_histories (session_id, message)\nVALUES \n  (\n    $1,\n    jsonb_build_object(\n      'type', 'human',\n      'content', $2,\n      'additional_kwargs', '{}'::jsonb,\n      'response_metadata', '{}'::jsonb\n    )\n  ),\n  (\n    $1,\n    jsonb_build_object(\n      'type', 'ai',\n      'content', $3,\n      'tool_calls', '[]'::jsonb,\n      'additional_kwargs', '{}'::jsonb,\n      'response_metadata', '{}'::jsonb,\n      'invalid_tool_calls', '[]'::jsonb\n    )\n  )\nRETURNING id, session_id, message;",
+        "options": {
+          "queryReplacement": "={{ $('input1').item.json.body.user_id }},{{ $if($(\"Set 'Text'1\").isExecuted, $(\"Set 'Text'1\").item.json.text, $(\"Transcribe1\").item.json.text) }},{{ $json.text }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1360,
+        1568
+      ],
+      "id": "e2113208-9e42-43a3-bf6a-5cb5b96fe2f6",
+      "name": "Log_Memory",
+      "credentials": {
+        "postgres": {
+          "id": "pnMSCrYjtVPCBND2",
+          "name": "Damijan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  json_agg(\n    json_build_object(\n      'id', id,\n      'message', message\n    ) ORDER BY id ASC\n  ) AS messages\nFROM (\n  SELECT \n    id,\n    message\n  FROM \n    n8n_chat_histories\n  WHERE \n    session_id = $1\n  ORDER BY \n    id DESC\n  LIMIT 10\n) AS recent_messages;",
+        "options": {
+          "queryReplacement": "={{ $('input1').item.json.body.user_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2256,
+        1584
+      ],
+      "id": "a0ac49a2-8e89-4cb1-816d-8571f02069c7",
+      "name": "get_memory",
+      "credentials": {
+        "postgres": {
+          "id": "pnMSCrYjtVPCBND2",
+          "name": "Damijan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Kalender_Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b1db68da-972f-4a3c-8649-b3ba0b4f3853"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kalender_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2b54b560-ca91-4b05-9627-09d20ac4f840",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Email_Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Email_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "68d17e5f-7978-4844-8090-196a21936e55",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Discord_Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Discord_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "88a5c54b-8740-4a24-9226-089d97275254",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Kontakt_Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kontakt_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "caeb93d6-5a55-4713-82a1-17c9f68eee45",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "MagicLine-Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MagicLine_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "094371ce-e65d-4f33-90d3-623cbecc0816",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Reminder-Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reminder_Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6383db8d-638d-4005-a676-4309fefea08f",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Tavily",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tavily"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "582626d6-e89e-466b-9c04-35fd72a96baf",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "Audio_Summary",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio_Summary"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a2e0ab28-68da-4954-9a03-1394ef181559",
+                    "leftValue": "={{ $json.agent_to_route_to }}",
+                    "rightValue": "none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "none"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -560,
+        1456
+      ],
+      "id": "388b6124-1127-460d-a800-431ee64c7dcd",
+      "name": "Switch3"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "Tool_results",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        800,
+        1568
+      ],
+      "id": "395d7e82-af77-4989-bced-fb4a4ac55979",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split Multi-Tool Output in separate Items\n\nconst output = $input.first().json.output;\n\n// Check if agents_to_call exists\nif (!output.agents_to_call || !Array.isArray(output.agents_to_call)) {\n  throw new Error(\"Ungültiger Output: agents_to_call fehlt oder ist kein Array\");\n}\n\n// Special handling for \"none\"\nif (output.agents_to_call.length === 1 && output.agents_to_call[0].agent === \"none\") {\n  return [{\n    json: {\n      agent_to_route_to: \"none\",\n      direct_response: output.agents_to_call[0].context,\n      final_instruction: output.final_instruction || \"\",\n      needs_clarification: output.needs_clarification || false,\n      clarification_question: output.clarification_question || \"\"\n    }\n  }];\n}\n\n// Create separate item for each agent\nconst items = output.agents_to_call.map(agentCall => ({\n  json: {\n    agent_to_route_to: agentCall.agent,\n    context_for_agent: agentCall.context,\n    final_instruction: output.final_instruction || \"\",\n    original_reasoning: output.reasoning || \"\",\n    needs_clarification: output.needs_clarification || false,\n    clarification_question: output.clarification_question || \"\"\n  }\n}));\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        1584
+      ],
+      "id": "2a458637-941d-41c5-b82a-e39b7ff62030",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        960
+      ],
+      "id": "515a1417-4032-466d-8595-198774ad9b71",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1136
+      ],
+      "id": "1da94ee1-638f-4d49-bcc3-bfe60f79753c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1296
+      ],
+      "id": "37f0a516-9b3e-4a15-bab3-01497a134926",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1472
+      ],
+      "id": "25f8cf2e-d181-4d88-b045-07f3bebfbbf0",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1648
+      ],
+      "id": "d2b47270-83f4-4fa9-8543-259db0bcbfff",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e1592e0-d989-4067-9afb-29023c1c4b43",
+              "name": "genutztres_Tool",
+              "value": "={{ $('Switch3').item.json.agent_to_route_to }}",
+              "type": "string"
+            },
+            {
+              "id": "8a65d2b9-c622-4eb7-a463-8ace6e92e6a1",
+              "name": "Ergebnis",
+              "value": "={{ $json.reponse }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1808
+      ],
+      "id": "0e4ed563-10a9-4475-bc07-2cf0e0873a78",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "query": "={{ $json.context_for_agent }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1984
+      ],
+      "id": "0017e9fe-78d0-488d-a79c-09408d1cb6ed",
+      "name": "Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "z2qvv6U5te6SUj7x",
+          "name": "Tavily account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Set 'Text'1": {
+      "main": [
+        [
+          {
+            "node": "Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe1": {
+      "main": [
+        [
+          {
+            "node": "Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set 'Text'1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "input1": {
+      "main": [
+        [
+          {
+            "node": "Login/sessioncookie1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login/sessioncookie1": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert or update rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "get_memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email_Agent1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord_Agent1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontakt_Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Magicline_Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder_Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwortgenerierer": {
+      "main": [
+        [
+          {
+            "node": "Log_Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Antwortgenerierer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log_Memory": {
+      "main": [
+        [
+          {
+            "node": "Split1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_memory": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch3": {
+      "main": [
+        [
+          {
+            "node": "Calendar_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email_Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord_Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Kontakt_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Magicline_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reminder_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 8
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 8
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        [
+          {
+            "node": "Antwortgenerierer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Set 'Text'1": [
+      {
+        "text": "erinnnere bitte wieder alle an die stundenzettel"
+      }
+    ],
+    "Webhook1": [
+      {
+        "headers": {
+          "host": "n8n-zenit-u38034.vm.elestio.app",
+          "x-real-ip": "91.99.149.237",
+          "x-forwarded-for": "91.99.149.237",
+          "x-forwarded-proto": "https",
+          "x-forwarded-port": "443",
+          "connection": "close",
+          "content-length": "146",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "user-agent": "python-httpx/0.28.1",
+          "content-type": "application/json"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "user_id": "1419734963053527130",
+          "content": "erinnnere bitte wieder alle an die stundenzettel",
+          "attachments": [],
+          "channel_id": "1421169322088202322"
+        },
+        "webhookUrl": "https://n8n-zenit-u38034.vm.elestio.app/webhook/00069145-70d5-43be-8218-131fdc487022",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9de78635e95be9c032c219ed93f5f40afe00af86615ecbca190389441ae987f8"
+  }
+}
