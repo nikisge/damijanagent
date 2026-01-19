@@ -279,6 +279,64 @@ def create_orchestrator_with_memory():
 
 
 # ============================================
+# Database Helpers for Run Tracking
+# ============================================
+
+def _create_run_in_db(logger: OrchestratorLogger, run_id: str, user_id: str, channel_id: str, user_message: str):
+    """Erstellt den Run in der DB BEVOR Logging startet."""
+    conn = logger._get_db_connection()
+    if not conn:
+        return
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO orchestrator_runs (id, user_id, channel_id, user_message, status)
+            VALUES (%s, %s, %s, %s, 'running')
+        """, (run_id, user_id, channel_id, user_message))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        logger.logger.warning(f"Failed to create run in DB: {e}")
+
+
+def _update_run_in_db(
+    logger: OrchestratorLogger,
+    run_id: str,
+    status: str,
+    final_response: str = None,
+    error_message: str = None,
+    duration_ms: int = None,
+    tools_planned: int = 0,
+    tools_executed: int = 0,
+    tools_failed: int = 0,
+):
+    """Updated den Run in der DB nach Abschluss."""
+    conn = logger._get_db_connection()
+    if not conn:
+        return
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE orchestrator_runs
+            SET status = %s,
+                final_response = %s,
+                error_message = %s,
+                duration_ms = %s,
+                tools_planned = %s,
+                tools_executed = %s,
+                tools_failed = %s,
+                completed_at = NOW()
+            WHERE id = %s
+        """, (status, final_response, error_message, duration_ms, tools_planned, tools_executed, tools_failed, run_id))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        logger.logger.warning(f"Failed to update run in DB: {e}")
+
+
+# ============================================
 # Main Runner with Logging
 # ============================================
 
@@ -314,6 +372,9 @@ async def run_orchestrator(
     logger = _current_logger
 
     start_time = time.time()
+
+    # Run in DB erstellen BEVOR irgendwas geloggt wird
+    _create_run_in_db(logger, run_id, user_id, channel_id, user_message)
 
     try:
         # Checkpointer wählen
@@ -356,16 +417,32 @@ async def run_orchestrator(
         # Stats
         total_duration = int((time.time() - start_time) * 1000)
         executed_steps = final_state.get("executed_steps", [])
+        todo_list = final_state.get("todo_list", [])
         tools_executed = len(executed_steps)
+        tools_planned = len(todo_list)
+        tools_failed = sum(1 for t in todo_list if t.status == "failed")
+        final_response = final_state.get("final_response", "Etwas ist schiefgelaufen.")
         success = not final_state.get("error")
 
         logger.run_complete(success, total_duration, tools_executed)
 
+        # Run in DB aktualisieren
+        _update_run_in_db(
+            logger=logger,
+            run_id=run_id,
+            status="completed" if success else "failed",
+            final_response=final_response,
+            duration_ms=total_duration,
+            tools_planned=tools_planned,
+            tools_executed=tools_executed,
+            tools_failed=tools_failed,
+        )
+
         return {
             "run_id": run_id,
-            "final_response": final_state.get("final_response", "Etwas ist schiefgelaufen."),
+            "final_response": final_response,
             "executed_steps": executed_steps,
-            "todo_list": final_state.get("todo_list", []),
+            "todo_list": todo_list,
             "state": final_state,
             "duration_ms": total_duration,
         }
@@ -375,9 +452,20 @@ async def run_orchestrator(
         logging.error(f"Orchestrator error: {e}", exc_info=True)
         logger.run_complete(False, total_duration, 0)
 
+        # Run in DB als failed markieren
+        error_response = f"Sorry, da ist ein Fehler passiert: {str(e)}"
+        _update_run_in_db(
+            logger=logger,
+            run_id=run_id,
+            status="failed",
+            final_response=error_response,
+            error_message=str(e),
+            duration_ms=total_duration,
+        )
+
         return {
             "run_id": run_id,
-            "final_response": f"Sorry, da ist ein Fehler passiert: {str(e)}",
+            "final_response": error_response,
             "executed_steps": [],
             "todo_list": [],
             "state": {},
