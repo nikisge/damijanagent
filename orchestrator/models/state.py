@@ -59,6 +59,9 @@ class OrchestratorState(TypedDict):
     - Was die Tools zurückgegeben haben
     """
 
+    # === Run Tracking ===
+    run_id: str  # Unique ID für diesen Run (für Logging)
+
     # === Input von N8N ===
     user_message: str
     user_id: str

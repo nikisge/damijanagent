@@ -61,16 +61,28 @@ from .nodes.responder import responder_node as _responder_node, clarify_node as 
 from .nodes.replanner import replanner_node as _replanner_node
 from .logging_config import OrchestratorLogger
 
-# Module-level logger instance (set per run)
-_current_logger: Optional[OrchestratorLogger] = None
+# Dictionary für Logger pro Run (thread-safe für parallele Requests)
+_loggers: dict[str, OrchestratorLogger] = {}
 
 
-def _get_logger() -> OrchestratorLogger:
-    """Holt den aktuellen Logger oder erstellt einen Dummy."""
-    global _current_logger
-    if _current_logger is None:
-        _current_logger = OrchestratorLogger()
-    return _current_logger
+def _get_logger(run_id: str = None) -> OrchestratorLogger:
+    """Holt den Logger für einen Run oder erstellt einen neuen."""
+    if run_id and run_id in _loggers:
+        return _loggers[run_id]
+    # Fallback: neuer Logger ohne DB-Tracking
+    return OrchestratorLogger(run_id)
+
+
+def _register_logger(run_id: str, logger: OrchestratorLogger):
+    """Registriert einen Logger für einen Run."""
+    _loggers[run_id] = logger
+
+
+def _cleanup_logger(run_id: str):
+    """Entfernt den Logger nach Abschluss des Runs."""
+    if run_id in _loggers:
+        _loggers[run_id].close()
+        del _loggers[run_id]
 
 
 # ============================================
@@ -79,7 +91,7 @@ def _get_logger() -> OrchestratorLogger:
 
 def planner_node(state: OrchestratorState) -> dict:
     """Planner mit Logging."""
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
     logger.planner_start(state.get("user_message", ""))
 
     start = time.time()
@@ -99,7 +111,7 @@ def planner_node(state: OrchestratorState) -> dict:
 
 async def executor_node(state: OrchestratorState) -> dict:
     """Executor mit Logging."""
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
 
     # Finde den nächsten TODO
     todos = state.get("todo_list", [])
@@ -138,7 +150,7 @@ async def executor_node(state: OrchestratorState) -> dict:
 def check_todo_status(state: OrchestratorState) -> str:
     """Checker mit Logging."""
     decision = _check_todo_status(state)
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
 
     # Reason ermitteln
     todos = state.get("todo_list", [])
@@ -155,14 +167,14 @@ def check_todo_status(state: OrchestratorState) -> str:
 def after_planner_check(state: OrchestratorState) -> str:
     """After-Planner Check mit Logging."""
     decision = _after_planner_check(state)
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
     logger.checker_decision(decision, "after planner")
     return decision
 
 
 def responder_node(state: OrchestratorState) -> dict:
     """Responder mit Logging."""
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
     logger.responder_generating()
 
     start = time.time()
@@ -177,7 +189,7 @@ def responder_node(state: OrchestratorState) -> dict:
 
 def clarify_node(state: OrchestratorState) -> dict:
     """Clarify Node mit Logging."""
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
     question = state.get("clarification_question", "Kannst du das genauer erklären?")
     logger.planner_clarification(question)
     return _clarify_node(state)
@@ -185,7 +197,7 @@ def clarify_node(state: OrchestratorState) -> dict:
 
 def replanner_node(state: OrchestratorState) -> dict:
     """Replanner mit Logging."""
-    logger = _get_logger()
+    logger = _get_logger(state.get("run_id"))
     failed_todos = [t for t in state.get("todo_list", []) if t.status == "failed"]
     logger.replanner_start(failed_todos)
 
@@ -362,14 +374,12 @@ async def run_orchestrator(
     Returns:
         dict mit final_response, executed_steps, todo_list, state, run_id
     """
-    global _current_logger
-
     # Run ID generieren
     run_id = str(uuid.uuid4())
 
-    # Logger erstellen
-    _current_logger = OrchestratorLogger(run_id)
-    logger = _current_logger
+    # Logger erstellen und registrieren (thread-safe für parallele Requests)
+    logger = OrchestratorLogger(run_id)
+    _register_logger(run_id, logger)
 
     start_time = time.time()
 
@@ -389,6 +399,7 @@ async def run_orchestrator(
 
         # Initial State
         initial_state = {
+            "run_id": run_id,  # Für Logging in allen Nodes
             "user_message": user_message,
             "user_id": user_id,
             "channel_id": channel_id,
@@ -474,5 +485,5 @@ async def run_orchestrator(
         }
 
     finally:
-        logger.close()
-        _current_logger = None
+        # Logger cleanup
+        _cleanup_logger(run_id)
