@@ -205,11 +205,15 @@ Deine Aufgabe: Formuliere die finale Antwort.
 4. **Output**: NUR die Nachricht an Damijan, keine Einleitungen oder Meta-Kommentare
 5. **Bei Small Talk** (Hallo, Wie geht's, etc.): Antworte freundlich mit "Hey Damijan!" und frage wie du helfen kannst
 6. **WICHTIG**: Gib NIE interne Gedanken oder Reasoning aus - nur die tatsächliche Antwort!
+7. **Bei Fragen zur Konversation**: Nutze die Conversation History um zu antworten
+
+# Conversation History (letzte Nachrichten)
+{conversation_history}
 
 # Tool-Ergebnisse
 {executed_steps}
 
-# Original-Anfrage
+# Aktuelle Anfrage
 {user_message}
 
 # Geplante Schritte

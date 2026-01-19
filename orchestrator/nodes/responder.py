@@ -71,6 +71,31 @@ def format_todo_list(todos: list) -> str:
     return "\n".join(lines)
 
 
+def format_conversation_history(history: list) -> str:
+    """Formatiert die Conversation History für den Responder."""
+    if not history:
+        return "Keine vorherige Konversation."
+
+    lines = []
+    for msg in history[-10:]:  # Letzte 10 Nachrichten
+        # Support both dict format (from DB) and message objects
+        if isinstance(msg, dict):
+            role = msg.get("type", "unknown")
+            content = msg.get("content", str(msg))
+        else:
+            role = getattr(msg, "type", "unknown")
+            content = getattr(msg, "content", str(msg))
+
+        # Kürzen wenn zu lang
+        if len(content) > 200:
+            content = content[:200] + "..."
+
+        role_label = "Damijan" if role == "human" else "Assistent"
+        lines.append(f"[{role_label}]: {content}")
+
+    return "\n".join(lines)
+
+
 def responder_node(state: OrchestratorState) -> dict:
     """
     Generiert die finale Antwort basierend auf ALLEN Ergebnissen.
@@ -88,6 +113,9 @@ def responder_node(state: OrchestratorState) -> dict:
 
     # System Prompt bauen
     system_prompt = RESPONDER_SYSTEM_PROMPT.format(
+        conversation_history=format_conversation_history(
+            state.get("conversation_history", [])
+        ),
         executed_steps=format_executed_steps(executed_steps),
         user_message=state.get("user_message", ""),
         todo_list=format_todo_list(todos),
