@@ -26,35 +26,22 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_postgres_checkpointer():
     """
-    Erstellt einen PostgreSQL Checkpointer für LangGraph.
+    Erstellt einen Checkpointer für LangGraph.
 
-    Der Checkpointer speichert den State nach jedem Node-Aufruf.
-    Das ermöglicht:
-    - Resume bei Fehlern
-    - Time-Travel Debugging
-    - Persistente Conversation History
+    HINWEIS: Wir nutzen MemorySaver für LangGraph State-Persistence.
+    Die wichtigere Conversation History wird separat in unserer
+    eigenen conversation_history Tabelle gespeichert (per User).
+
+    Der MemorySaver reicht für single-request State tracking.
+    Für echtes Cross-Request State Recovery bräuchten wir ein
+    komplexeres Setup mit PostgresSaver + Connection Pool.
     """
-    if not DATABASE_URL:
-        logger.warning("DATABASE_URL not set, using in-memory checkpointer")
-        from langgraph.checkpoint.memory import MemorySaver
-        return MemorySaver()
+    from langgraph.checkpoint.memory import MemorySaver
 
-    try:
-        from langgraph.checkpoint.postgres import PostgresSaver
-
-        checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
-        logger.info("PostgreSQL checkpointer initialized")
-        return checkpointer
-
-    except ImportError:
-        logger.warning("langgraph.checkpoint.postgres not available, using memory")
-        from langgraph.checkpoint.memory import MemorySaver
-        return MemorySaver()
-
-    except Exception as e:
-        logger.error(f"Failed to create PostgreSQL checkpointer: {e}")
-        from langgraph.checkpoint.memory import MemorySaver
-        return MemorySaver()
+    # MemorySaver ist ausreichend, da wir Conversation History
+    # separat in PostgreSQL speichern (siehe ConversationMemory)
+    logger.info("Using MemorySaver for LangGraph checkpointing")
+    return MemorySaver()
 
 
 # === Conversation History ===
@@ -173,7 +160,14 @@ class ConversationMemory:
             rows = cur.fetchall()
 
             # Reihenfolge umkehren (älteste zuerst)
-            messages = [json.loads(row[0]) for row in reversed(rows)]
+            # JSONB columns are automatically parsed by psycopg2, so no json.loads needed
+            messages = []
+            for row in reversed(rows):
+                msg = row[0]
+                # Handle both cases: already parsed dict or string
+                if isinstance(msg, str):
+                    msg = json.loads(msg)
+                messages.append(msg)
             return messages
 
         except Exception as e:
