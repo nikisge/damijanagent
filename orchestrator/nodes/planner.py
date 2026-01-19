@@ -57,8 +57,13 @@ def format_conversation_history(history: list) -> str:
 
     lines = []
     for msg in history[-10:]:  # Letzte 10 Nachrichten
-        role = getattr(msg, "type", "unknown")
-        content = getattr(msg, "content", str(msg))
+        # Support both dict format (from DB) and message objects
+        if isinstance(msg, dict):
+            role = msg.get("type", "unknown")
+            content = msg.get("content", str(msg))
+        else:
+            role = getattr(msg, "type", "unknown")
+            content = getattr(msg, "content", str(msg))
         lines.append(f"[{role}]: {content}")
     return "\n".join(lines)
 

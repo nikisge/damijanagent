@@ -23,6 +23,7 @@ import logging
 
 from .graph import run_orchestrator
 from .logging_config import setup_logging
+from .memory import get_conversation_memory
 
 # Logging Setup
 setup_logging()
@@ -138,11 +139,23 @@ async def orchestrate(request: OrchestrateRequest):
         # Orchestrator ausführen (mit PostgreSQL wenn verfügbar)
         use_postgres = bool(os.getenv("DATABASE_URL"))
 
+        # Conversation History aus DB laden (wenn nicht von N8N übergeben)
+        conversation_history = request.conversation_history
+        if not conversation_history:
+            try:
+                memory = get_conversation_memory()
+                conversation_history = memory.get_recent_history(request.user_id, limit=10)
+                if conversation_history:
+                    logger.info(f"Loaded {len(conversation_history)} messages from conversation history")
+            except Exception as e:
+                logger.warning(f"Could not load conversation history: {e}")
+                conversation_history = []
+
         result = await run_orchestrator(
             user_message=request.user_message,
             user_id=request.user_id,
             channel_id=request.channel_id,
-            conversation_history=request.conversation_history,
+            conversation_history=conversation_history,
             thread_id=request.user_id,
             use_postgres=use_postgres,
         )
@@ -154,10 +167,24 @@ async def orchestrate(request: OrchestrateRequest):
             if hasattr(step, 'success') and step.success
         ]
 
+        # Conversation History speichern
+        final_response = result.get("final_response", "Etwas ist schiefgelaufen.")
+        try:
+            memory = get_conversation_memory()
+            memory.save_interaction(
+                user_id=request.user_id,
+                user_message=request.user_message,
+                ai_response=final_response,
+                tool_calls=[{"tool": t} for t in executed_tools],
+                tool_results=[],
+            )
+        except Exception as e:
+            logger.warning(f"Could not save conversation history: {e}")
+
         logger.info(f"Orchestrator completed. Run ID: {result.get('run_id')}, Tools: {executed_tools}")
 
         return OrchestrateResponse(
-            response=result.get("final_response", "Etwas ist schiefgelaufen."),
+            response=final_response,
             success=True,
             run_id=result.get("run_id"),
             executed_tools=executed_tools,

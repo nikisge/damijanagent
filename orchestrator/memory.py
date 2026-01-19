@@ -104,7 +104,7 @@ class ConversationMemory:
         try:
             # Human Message speichern
             cur.execute("""
-                INSERT INTO n8n_chat_histories (session_id, message)
+                INSERT INTO conversation_history (session_id, message)
                 VALUES (%s, %s)
             """, (
                 user_id,
@@ -118,7 +118,7 @@ class ConversationMemory:
 
             # AI Response speichern (mit Tool-Info)
             cur.execute("""
-                INSERT INTO n8n_chat_histories (session_id, message)
+                INSERT INTO conversation_history (session_id, message)
                 VALUES (%s, %s)
             """, (
                 user_id,
@@ -164,7 +164,7 @@ class ConversationMemory:
         try:
             cur.execute("""
                 SELECT message
-                FROM n8n_chat_histories
+                FROM conversation_history
                 WHERE session_id = %s
                 ORDER BY id DESC
                 LIMIT %s
@@ -207,7 +207,7 @@ def get_conversation_memory() -> ConversationMemory:
 
 SETUP_SQL = """
 -- Conversation History Tabelle (kompatibel mit N8N)
-CREATE TABLE IF NOT EXISTS n8n_chat_histories (
+CREATE TABLE IF NOT EXISTS conversation_history (
     id SERIAL PRIMARY KEY,
     session_id VARCHAR(255) NOT NULL,
     message JSONB NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS n8n_chat_histories (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_histories_session
-ON n8n_chat_histories(session_id);
+ON conversation_history(session_id);
 
 -- Orchestrator State Tabelle (für LangGraph Checkpointing)
 CREATE TABLE IF NOT EXISTS orchestrator_checkpoints (
