@@ -83,16 +83,8 @@ def responder_node(state: OrchestratorState) -> dict:
     """
     llm = get_responder_llm()
 
-    # Check für direkte Antwort (kein Tool nötig)
     todos = state.get("todo_list", [])
     executed_steps = state.get("executed_steps", [])
-
-    # Wenn keine Tools und plan_reasoning eine direkte Antwort enthält
-    if not todos and state.get("plan_reasoning"):
-        # Bei "none" Tool enthält plan_reasoning die direkte Antwort
-        return {
-            "final_response": state.get("plan_reasoning", "Wie kann ich dir helfen?")
-        }
 
     # System Prompt bauen
     system_prompt = RESPONDER_SYSTEM_PROMPT.format(
