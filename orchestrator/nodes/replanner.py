@@ -55,19 +55,19 @@ Deine Aufgabe: Passe den Plan an oder gib auf wenn es nicht möglich ist.
 
 # Output Format
 ```json
-{
+{{
   "give_up": false,
   "reason": "Warum dieses Vorgehen",
   "new_todos": [
-    {
+    {{
       "id": "step_1",
       "tool": "Tool-Name",
       "description": "Was soll passieren",
       "depends_on": [],
       "status": "pending"
-    }
+    }}
   ]
-}
+}}
 ```
 """
 
