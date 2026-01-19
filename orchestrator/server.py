@@ -52,17 +52,15 @@ app.add_middleware(
 class OrchestrateRequest(BaseModel):
     """Request von N8N."""
     user_message: str
-    user_id: str
-    channel_id: str
+    user_id: str  # Discord User ID - wichtig für Memory/Checkpointing
+    channel_id: Optional[str] = None  # Optional - nur wenn Discord-Agent Channel braucht
     conversation_history: Optional[list] = None
 
     class Config:
         json_schema_extra = {
             "example": {
                 "user_message": "Welche Termine habe ich morgen?",
-                "user_id": "1419734963053527130",
-                "channel_id": "1421169322088202322",
-                "conversation_history": []
+                "user_id": "1419734963053527130"
             }
         }
 
