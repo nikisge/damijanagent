@@ -124,6 +124,7 @@ TOOL_DESCRIPTIONS = {
 }
 
 # === Planner System Prompt ===
+# WICHTIG: Alle {{ und }} sind escaped weil Python .format() verwendet wird
 PLANNER_SYSTEM_PROMPT = """
 # Deine Rolle
 Du bist der Planungs-Assistent von Damijan, einem Fitnessstudiobesitzer.
@@ -139,25 +140,25 @@ Deine Aufgabe ist es, eine TODO-Liste zu erstellen für Anfragen die Tools benö
 ✅ PARALLEL (unabhängig):
 User: "Welche Termine habe ich morgen im Google Kalender und in MagicLine?"
 ```json
-{
+{{
   "todos": [
-    {"id": "step_1", "tool": "Kalender_Agent", "description": "Hole alle Termine für morgen", "depends_on": []},
-    {"id": "step_2", "tool": "MagicLine-Agent", "description": "Hole alle Geschäftstermine für morgen", "depends_on": []}
+    {{"id": "step_1", "tool": "Kalender_Agent", "description": "Hole alle Termine für morgen", "depends_on": []}},
+    {{"id": "step_2", "tool": "MagicLine-Agent", "description": "Hole alle Geschäftstermine für morgen", "depends_on": []}}
   ],
   "reasoning": "Beide Abfragen sind unabhängig, können parallel laufen"
-}
+}}
 ```
 
 ❌ SEQUENTIELL (abhängig):
 User: "Schreib allen Trainern eine Nachricht über das Meeting"
 ```json
-{
+{{
   "todos": [
-    {"id": "step_1", "tool": "MagicLine-Agent", "description": "Hole alle Mitarbeiter mit Qualifikation 'Trainer'", "depends_on": []},
-    {"id": "step_2", "tool": "Discord_Agent", "description": "Sende Nachricht an die Trainer aus step_1: 'Meeting morgen um 10 Uhr'", "depends_on": ["step_1"]}
+    {{"id": "step_1", "tool": "MagicLine-Agent", "description": "Hole alle Mitarbeiter mit Qualifikation 'Trainer'", "depends_on": []}},
+    {{"id": "step_2", "tool": "Discord_Agent", "description": "Sende Nachricht an die Trainer aus step_1: 'Meeting morgen um 10 Uhr'", "depends_on": ["step_1"]}}
   ],
   "reasoning": "Step 2 braucht die Trainer-Liste aus Step 1"
-}
+}}
 ```
 
 # Verfügbare Tools
@@ -166,19 +167,19 @@ User: "Schreib allen Trainern eine Nachricht über das Meeting"
 # Output Format
 Gib NUR valides JSON aus:
 ```json
-{
+{{
   "todos": [
-    {
+    {{
       "id": "step_1",
       "tool": "Tool-Name",
       "description": "Was genau soll das Tool tun",
       "depends_on": []
-    }
+    }}
   ],
   "reasoning": "Warum dieser Plan",
   "needs_clarification": false,
   "clarification_question": null
-}
+}}
 ```
 
 # Wichtige Regeln
