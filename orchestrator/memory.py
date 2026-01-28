@@ -61,9 +61,20 @@ class ConversationMemory:
         self._conn = None
 
     def _get_connection(self):
-        """Lazy connection initialization."""
+        """Lazy connection initialization mit Reconnect."""
+        import psycopg2
+        if self._conn is not None:
+            try:
+                # Prüfe ob Connection noch lebt
+                self._conn.cursor().execute("SELECT 1")
+            except Exception:
+                logger.warning("DB connection lost, reconnecting...")
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+                self._conn = None
         if self._conn is None:
-            import psycopg2
             self._conn = psycopg2.connect(self.connection_string)
         return self._conn
 
@@ -104,6 +115,10 @@ class ConversationMemory:
             ))
 
             # AI Response speichern (mit Tool-Info)
+            # WICHTIG: tool_calls NICHT als top-level Feld speichern,
+            # weil LangChains add_messages sonst versucht ToolCall-Objekte
+            # daraus zu machen (erwartet name/args/id, nicht unser Format).
+            # Stattdessen in additional_kwargs packen.
             cur.execute("""
                 INSERT INTO conversation_history (session_id, message)
                 VALUES (%s, %s)
@@ -112,14 +127,13 @@ class ConversationMemory:
                 json.dumps({
                     "type": "ai",
                     "content": ai_response,
-                    "tool_calls": tool_calls or [],
                     "additional_kwargs": {
+                        "executed_tools": tool_calls or [],
                         "tool_results": tool_results or [],
                     },
                     "response_metadata": {
                         "timestamp": datetime.now().isoformat(),
                     },
-                    "invalid_tool_calls": [],
                 })
             ))
 
@@ -167,6 +181,22 @@ class ConversationMemory:
                 # Handle both cases: already parsed dict or string
                 if isinstance(msg, str):
                     msg = json.loads(msg)
+                # WICHTIG: tool_calls IMMER aus top-level entfernen!
+                # LangChains add_messages versucht sonst ToolCall-Objekte daraus
+                # zu bauen (erwartet name/args/id) und crasht.
+                # Unsere Tool-Info liegt sicher in additional_kwargs.executed_tools.
+                if isinstance(msg, dict):
+                    if "tool_calls" in msg:
+                        tool_calls = msg.pop("tool_calls")
+                        # Alte Daten retten falls nötig
+                        if tool_calls and isinstance(tool_calls, list):
+                            if "additional_kwargs" not in msg:
+                                msg["additional_kwargs"] = {}
+                            if "executed_tools" not in msg.get("additional_kwargs", {}):
+                                msg["additional_kwargs"]["executed_tools"] = tool_calls
+                    # Auch diese Felder entfernen - verursachen LangChain-Fehler
+                    msg.pop("invalid_tool_calls", None)
+                    msg.pop("tool_call_chunks", None)
                 messages.append(msg)
             return messages
 

@@ -397,13 +397,23 @@ async def run_orchestrator(
         # Graph erstellen
         graph = create_orchestrator_graph(checkpointer=checkpointer)
 
+        # Conversation History bereinigen (Schutz vor fehlerhaften tool_calls)
+        clean_history = []
+        for msg in (conversation_history or []):
+            if isinstance(msg, dict):
+                msg = dict(msg)  # Kopie, um Original nicht zu verändern
+                msg.pop("tool_calls", None)
+                msg.pop("invalid_tool_calls", None)
+                msg.pop("tool_call_chunks", None)
+            clean_history.append(msg)
+
         # Initial State
         initial_state = {
             "run_id": run_id,  # Für Logging in allen Nodes
             "user_message": user_message,
             "user_id": user_id,
             "channel_id": channel_id,
-            "conversation_history": conversation_history or [],
+            "conversation_history": clean_history,
             "todo_list": [],
             "current_step_index": 0,
             "plan_reasoning": "",

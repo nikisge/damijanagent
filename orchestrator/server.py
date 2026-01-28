@@ -175,7 +175,7 @@ async def orchestrate(request: OrchestrateRequest):
                 user_id=request.user_id,
                 user_message=request.user_message,
                 ai_response=final_response,
-                tool_calls=[{"tool": t} for t in executed_tools],
+                tool_calls=executed_tools,  # Nur Tool-Namen als Strings
                 tool_results=[],
             )
         except Exception as e:
