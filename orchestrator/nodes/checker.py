@@ -9,6 +9,7 @@ Die Conditional Edge Funktion prüft:
 """
 
 from ..models.state import OrchestratorState, TodoItem, ToolExecution
+from ..config import MAX_RETRIES
 
 
 def has_ready_todo(
@@ -69,7 +70,7 @@ def check_todo_status(state: OrchestratorState) -> str:
     if has_failed:
         # Prüfe ob wir schon zu oft replanned haben
         retry_count = state.get("retry_count", 0)
-        if retry_count >= 2:
+        if retry_count >= MAX_RETRIES:
             # Zu viele Retries - gib auf und antworte mit Fehler
             return "all_done"
         return "needs_replan"

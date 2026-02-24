@@ -20,12 +20,16 @@ DATABASE_URL = os.getenv(
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Planner: Braucht gutes Reasoning + Stabilität
-# Claude Sonnet 4.5 ist der Sweet Spot für agentic workflows ($3/$15 per 1M tokens)
-PLANNER_MODEL = os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4.5")
+# Claude Sonnet 4.6 - besseres Reasoning, gleicher Preis ($3/$15 per 1M tokens)
+PLANNER_MODEL = os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4.6")
 
 # Responder: Nur Text generieren, kann günstiger sein
 # Optionen: gemini-2.5-flash (super günstig), claude-haiku-3.5, gpt-4o-mini
 RESPONDER_MODEL = os.getenv("RESPONDER_MODEL", "google/gemini-2.5-flash")
+
+# === Orchestrator Settings ===
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", "2"))
+WEBHOOK_TIMEOUT = int(os.getenv("WEBHOOK_TIMEOUT", "60"))
 
 # === N8N Webhook URLs ===
 # Diese URLs werden von dir noch eingetragen
@@ -61,8 +65,11 @@ TOOL_DESCRIPTIONS = {
             "E-Mails beantworten",
             "E-Mails labeln",
             "Entwürfe erstellen",
-            "E-Mails abrufen/suchen"
+            "E-Mails abrufen/suchen",
+            "E-Mail-Inhalt lesen",
+            "E-Mails als ungelesen markieren"
         ],
+        "important": "Der Email-Agent erstellt Entwürfe vor dem Versand. Bei 'sende Email' wird der Agent den Entwurf als Antwort zurückgeben.",
         "example_input": "Sende E-Mail an max@example.com mit Betreff 'Meeting' und Text '...'"
     },
 
@@ -74,7 +81,7 @@ TOOL_DESCRIPTIONS = {
             "Mitarbeiter-Liste abrufen",
             "Channel-Liste abrufen"
         ],
-        "important": "NUR für Nachrichten an ANDERE Personen, nicht an Damijan selbst!",
+        "important": "NUR für Nachrichten an ANDERE Personen, nicht an Damijan! Nutze nur den NAMEN der Person/des Channels - KEINE User IDs oder sonstige IDs mitgeben, der Discord-Agent löst Namen selbst auf.",
         "example_input": "Sende Nachricht an alle im Channel 'team': 'Bitte Stundenzettel abgeben'"
     },
 
@@ -90,23 +97,26 @@ TOOL_DESCRIPTIONS = {
     },
 
     "MagicLine-Agent": {
-        "description": "Fitnessstudio CRM - Geschäftsdaten",
+        "description": "Fitnessstudio CRM - Geschäftsdaten (Termine, Schichten, Aufgaben, Mitarbeiter)",
         "capabilities": [
-            "Geschäftstermine erstellen/löschen",
-            "Mitarbeiter-Schichten verwalten",
-            "Aufgaben delegieren",
-            "Mitarbeiter + Qualifikationen abrufen",
-            "Mitglieder-Infos abrufen"
+            "Geschäftstermine erstellen/löschen/bearbeiten/abrufen",
+            "Mitarbeiter-Schichten erstellen/löschen/abrufen",
+            "Aufgaben erstellen/als erledigt markieren/abrufen",
+            "Mitarbeiter + Qualifikationen abrufen"
         ],
         "sub_agents": ["Termin-Agent", "Schichten-Agent", "Aufgaben-Agent"],
-        "important": "Für Mitarbeiter-Infos ZUERST hier nachschauen!",
+        "important": "Für Mitarbeiter-Infos ZUERST hier nachschauen! Der Agent hat eigene Sub-Agents die intern koordiniert werden.",
         "example_input": "Hole alle Mitarbeiter mit Qualifikation 'Trainer'"
     },
 
     "Reminder-Agent": {
-        "description": "Erinnerungen via Discord setzen",
-        "capabilities": ["Einmalige Erinnerung setzen für bestimmte Zeit"],
-        "required_params": ["user_id", "Zeit", "Nachricht"],
+        "description": "Erinnerungen via Postgres verwalten",
+        "capabilities": [
+            "Erinnerung erstellen für bestimmte Zeit",
+            "Erinnerung löschen",
+            "Alle Erinnerungen auflisten"
+        ],
+        "important": "user_id wird automatisch mitgesendet",
         "example_input": "Setze Reminder für morgen 9:00 Uhr: 'Meeting vorbereiten'"
     },
 

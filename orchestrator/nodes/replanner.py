@@ -174,8 +174,24 @@ def replanner_node(state: OrchestratorState) -> dict:
         )
         new_todos.append(todo)
 
+    # Wenn keine neuen TODOs → alle pending auf failed setzen (verhindert Infinite-Loop)
+    if not new_todos:
+        updated_todos = []
+        for todo in todos:
+            if todo.status == "pending":
+                todo_dict = todo.model_dump()
+                todo_dict["status"] = "failed"
+                todo_dict["error"] = "Replanning konnte keinen neuen Plan erstellen"
+                updated_todos.append(TodoItem(**todo_dict))
+            else:
+                updated_todos.append(todo)
+        return {
+            "todo_list": updated_todos,
+            "retry_count": retry_count + 1,
+        }
+
     return {
-        "todo_list": new_todos if new_todos else todos,
+        "todo_list": new_todos,
         "retry_count": retry_count + 1,
         "plan_reasoning": replan_data.get("reason", "Plan angepasst"),
     }

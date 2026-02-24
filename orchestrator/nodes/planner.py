@@ -91,9 +91,6 @@ def planner_node(state: OrchestratorState) -> dict:
 Damijans Anfrage:
 "{state['user_message']}"
 
-User ID: {state.get('user_id', 'unknown')}
-Channel ID: {state.get('channel_id', 'unknown')}
-
 Erstelle jetzt den Plan als JSON.
 """
 

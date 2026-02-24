@@ -8,12 +8,15 @@ Der Executor:
 4. Speichert das Ergebnis
 """
 
+import logging
 import httpx
 from datetime import datetime
 from typing import Optional
 
 from ..models.state import OrchestratorState, TodoItem, ToolExecution
-from ..config import WEBHOOK_URLS
+from ..config import WEBHOOK_URLS, WEBHOOK_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 
 def get_completed_step_ids(executed_steps: list[ToolExecution]) -> set[str]:
@@ -102,9 +105,10 @@ async def call_n8n_webhook(
     # Payload bauen - unterschiedliche Agents erwarten unterschiedliche Felder
     if tool_name == "Reminder-Agent":
         # Reminder-Agent erwartet "prompt" statt "query"
-        # user_id wird in N8N aus dem ursprünglichen Input geholt
+        # user_id wird in N8N für SQL-Queries benötigt
         payload = {
             "prompt": context,
+            "user_id": user_id,
         }
     else:
         # Alle anderen Agents erwarten "query"
@@ -112,8 +116,11 @@ async def call_n8n_webhook(
             "query": context,
         }
 
+    logger.debug(f"[{tool_name}] Webhook URL: {webhook_url}")
+    logger.debug(f"[{tool_name}] Request payload: {payload}")
+
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=float(WEBHOOK_TIMEOUT)) as client:
             response = await client.post(
                 webhook_url,
                 json=payload,
@@ -122,25 +129,31 @@ async def call_n8n_webhook(
             response.raise_for_status()
 
             result = response.json()
+            logger.debug(f"[{tool_name}] Response ({response.status_code}): {result}")
             return {
                 "success": True,
-                "output": result.get("response") or result.get("output") or result,
+                "output": result.get("response") if result.get("response") is not None
+                    else result.get("output") if result.get("output") is not None
+                    else result,
                 "error": None
             }
 
     except httpx.TimeoutException:
+        logger.error(f"[{tool_name}] Timeout after {WEBHOOK_TIMEOUT}s")
         return {
             "success": False,
             "output": None,
             "error": f"Timeout beim Aufruf von {tool_name}"
         }
     except httpx.HTTPStatusError as e:
+        logger.error(f"[{tool_name}] HTTP {e.response.status_code}: {e.response.text}")
         return {
             "success": False,
             "output": None,
             "error": f"HTTP Error {e.response.status_code}: {e.response.text}"
         }
     except Exception as e:
+        logger.error(f"[{tool_name}] Unexpected error: {e}")
         return {
             "success": False,
             "output": None,
