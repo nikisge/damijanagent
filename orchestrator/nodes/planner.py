@@ -8,6 +8,8 @@ Der Planner analysiert die User-Anfrage und erstellt einen Plan:
 """
 
 import json
+import logging
+import time
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -20,6 +22,8 @@ from ..config import (
     PLANNER_MODEL,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_planner_llm():
     """Initialisiert das Planner LLM via OpenRouter."""
@@ -28,6 +32,8 @@ def get_planner_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.3,  # Niedrig für konsistente Planung
+        timeout=120,  # 2min Timeout für OpenRouter
+        max_retries=1,
     )
 
 
@@ -100,8 +106,25 @@ Erstelle jetzt den Plan als JSON.
     ]
 
     # LLM aufrufen
-    response = llm.invoke(messages)
+    logger.info(f"[Planner] Calling {PLANNER_MODEL}...")
+    start = time.time()
+    try:
+        response = llm.invoke(messages)
+        duration = time.time() - start
+        logger.info(f"[Planner] LLM responded in {duration:.1f}s")
+    except Exception as e:
+        duration = time.time() - start
+        logger.error(f"[Planner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")
+        return {
+            "todo_list": [],
+            "plan_reasoning": f"LLM-Fehler: {type(e).__name__}",
+            "needs_clarification": False,
+            "clarification_question": "",
+            "error": str(e),
+        }
+
     response_text = response.content
+    logger.info(f"[Planner] Raw response ({len(response_text)} chars): {response_text[:200]}")
 
     # JSON parsen (auch wenn in ```json ``` Blöcken)
     json_text = response_text

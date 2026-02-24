@@ -8,6 +8,8 @@ Der Responder:
 """
 
 import json
+import logging
+import time
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -18,6 +20,8 @@ from ..config import (
     RESPONDER_MODEL,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_responder_llm():
     """Initialisiert das Responder LLM via OpenRouter."""
@@ -26,6 +30,8 @@ def get_responder_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.7,  # Etwas höher für natürliche Antworten
+        timeout=60,
+        max_retries=1,
     )
 
 
@@ -136,7 +142,18 @@ Beachte:
         HumanMessage(content=user_prompt),
     ]
 
-    response = llm.invoke(messages)
+    logger.info(f"[Responder] Calling {RESPONDER_MODEL}...")
+    start = time.time()
+    try:
+        response = llm.invoke(messages)
+        duration = time.time() - start
+        logger.info(f"[Responder] LLM responded in {duration:.1f}s")
+    except Exception as e:
+        duration = time.time() - start
+        logger.error(f"[Responder] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")
+        return {
+            "final_response": "Sorry, ich konnte gerade keine Antwort generieren. Versuch es bitte nochmal!"
+        }
 
     return {
         "final_response": response.content

@@ -8,12 +8,16 @@ Der Replanner wird aufgerufen wenn:
 """
 
 import json
+import logging
+import time
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..models.state import OrchestratorState, TodoItem
 from ..config import OPENROUTER_API_KEY, PLANNER_MODEL
+
+logger = logging.getLogger(__name__)
 
 
 def get_replanner_llm():
@@ -23,6 +27,8 @@ def get_replanner_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.3,
+        timeout=120,
+        max_retries=1,
     )
 
 
@@ -124,7 +130,21 @@ def replanner_node(state: OrchestratorState) -> dict:
         HumanMessage(content=prompt),
     ]
 
-    response = llm.invoke(messages)
+    logger.info(f"[Replanner] Calling {PLANNER_MODEL}...")
+    start = time.time()
+    try:
+        response = llm.invoke(messages)
+        duration = time.time() - start
+        logger.info(f"[Replanner] LLM responded in {duration:.1f}s")
+    except Exception as e:
+        duration = time.time() - start
+        logger.error(f"[Replanner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")
+        return {
+            "todo_list": todos,
+            "retry_count": retry_count + 1,
+            "error": f"Replanning LLM-Fehler: {type(e).__name__}",
+        }
+
     response_text = response.content
 
     # JSON parsen
