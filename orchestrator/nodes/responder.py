@@ -33,7 +33,6 @@ def get_responder_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.7,  # Etwas höher für natürliche Antworten
-        max_tokens=1500,  # Explizit setzen - Claude auf OpenRouter braucht das
         timeout=60,
         max_retries=1,
     )

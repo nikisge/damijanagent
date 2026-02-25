@@ -34,7 +34,7 @@ def get_planner_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.3,  # Niedrig für konsistente Planung
-        max_tokens=2000,  # Explizit setzen - Claude auf OpenRouter braucht das
+        max_tokens=4096,  # Explizit setzen - Claude auf OpenRouter braucht das
         timeout=120,  # 2min Timeout für OpenRouter
         max_retries=1,
     )
