@@ -12,6 +12,7 @@ import json
 import logging
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -88,7 +89,7 @@ async def planner_node(state: OrchestratorState) -> dict:
     conversation_history = state.get("conversation_history", [])
     system_prompt = PLANNER_SYSTEM_PROMPT.format(
         tool_descriptions=format_tool_descriptions(),
-        current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        current_datetime=datetime.now(ZoneInfo("Europe/Berlin")).strftime("%Y-%m-%d %H:%M:%S"),
         conversation_history=format_conversation_history(conversation_history),
     )
 
