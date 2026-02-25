@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import time
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -120,6 +121,7 @@ async def responder_node(state: OrchestratorState) -> dict:
 
     # System Prompt bauen
     system_prompt = RESPONDER_SYSTEM_PROMPT.format(
+        current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         conversation_history=format_conversation_history(
             state.get("conversation_history", [])
         ),

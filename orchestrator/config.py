@@ -129,7 +129,7 @@ TOOL_DESCRIPTIONS = {
 
     "none": {
         "description": "Kein Tool nötig - direkte Antwort",
-        "use_when": "Small Talk, allgemeine Fragen, Rückfragen zum Gespräch"
+        "use_when": "Small Talk, allgemeine Fragen, Rückfragen zum Gespräch, Fragen nach Uhrzeit/Datum (aktuelle Zeit wird automatisch bereitgestellt)"
     }
 }
 
@@ -216,6 +216,10 @@ Deine Aufgabe: Formuliere die finale Antwort.
 5. **Bei Small Talk** (Hallo, Wie geht's, etc.): Antworte freundlich mit "Hey Damijan!" und frage wie du helfen kannst
 6. **WICHTIG**: Gib NIE interne Gedanken oder Reasoning aus - nur die tatsächliche Antwort!
 7. **Bei Fragen zur Konversation**: Nutze die Conversation History um zu antworten
+8. **Bei Fragen nach Uhrzeit/Datum**: Die aktuelle Zeit ist unten angegeben - antworte direkt damit
+
+# Aktuelle Zeit
+{current_datetime}
 
 # Conversation History (letzte Nachrichten)
 {conversation_history}
