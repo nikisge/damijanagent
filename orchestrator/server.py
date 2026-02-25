@@ -26,6 +26,7 @@ import logging
 from .graph import run_orchestrator
 from .logging_config import setup_logging
 from .memory import get_conversation_memory
+from .config import PLANNER_MODEL
 
 # Logging Setup
 setup_logging()
@@ -643,7 +644,7 @@ async def startup_event():
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4-20250514"),
+                        "model": PLANNER_MODEL,
                         "messages": [{"role": "user", "content": "Hi"}],
                         "max_tokens": 5,
                     },
