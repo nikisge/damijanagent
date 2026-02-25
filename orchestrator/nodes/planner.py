@@ -34,6 +34,7 @@ def get_planner_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.3,  # Niedrig für konsistente Planung
+        max_tokens=2000,  # Explizit setzen - Claude auf OpenRouter braucht das
         timeout=120,  # 2min Timeout für OpenRouter
         max_retries=1,
     )
@@ -112,36 +113,46 @@ Erstelle jetzt den Plan als JSON.
     logger.info(f"[Planner] API key: {masked_key}, model: {PLANNER_MODEL}")
     logger.info(f"[Planner] Prompt size: {len(system_prompt)} chars, history: {len(conversation_history)} messages")
 
-    # LLM aufrufen (async mit Timeout)
-    logger.info(f"[Planner] Calling {PLANNER_MODEL} (async, timeout=90s)...")
-    start = time.time()
-    try:
-        response = await asyncio.wait_for(
-            llm.ainvoke(messages),
-            timeout=90,
-        )
-        duration = time.time() - start
-        logger.info(f"[Planner] LLM responded in {duration:.1f}s")
-    except asyncio.TimeoutError:
-        duration = time.time() - start
-        logger.error(f"[Planner] LLM TIMEOUT after {duration:.1f}s (limit: 90s)")
-        return {
-            "todo_list": [],
-            "plan_reasoning": "LLM-Timeout: Keine Antwort nach 90s",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "error": "LLM timeout after 90s",
-        }
-    except Exception as e:
-        duration = time.time() - start
-        logger.error(f"[Planner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")
-        return {
-            "todo_list": [],
-            "plan_reasoning": f"LLM-Fehler: {type(e).__name__}",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "error": str(e),
-        }
+    # LLM aufrufen (async mit Timeout + 1 Retry)
+    max_attempts = 2
+    response = None
+    for attempt in range(1, max_attempts + 1):
+        logger.info(f"[Planner] Calling {PLANNER_MODEL} (async, timeout=90s, attempt {attempt}/{max_attempts})...")
+        start = time.time()
+        try:
+            response = await asyncio.wait_for(
+                llm.ainvoke(messages),
+                timeout=90,
+            )
+            duration = time.time() - start
+            logger.info(f"[Planner] LLM responded in {duration:.1f}s")
+            break  # Erfolg
+        except asyncio.TimeoutError:
+            duration = time.time() - start
+            logger.error(f"[Planner] LLM TIMEOUT after {duration:.1f}s (attempt {attempt}/{max_attempts})")
+            if attempt < max_attempts:
+                logger.info("[Planner] Retrying...")
+                continue
+            return {
+                "todo_list": [],
+                "plan_reasoning": "LLM-Timeout: Keine Antwort nach 2 Versuchen",
+                "needs_clarification": False,
+                "clarification_question": "",
+                "error": "LLM timeout after 2 attempts (90s each)",
+            }
+        except Exception as e:
+            duration = time.time() - start
+            logger.error(f"[Planner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")
+            if attempt < max_attempts:
+                logger.info("[Planner] Retrying...")
+                continue
+            return {
+                "todo_list": [],
+                "plan_reasoning": f"LLM-Fehler: {type(e).__name__}",
+                "needs_clarification": False,
+                "clarification_question": "",
+                "error": str(e),
+            }
 
     response_text = response.content
     logger.info(f"[Planner] Raw response ({len(response_text)} chars): {response_text[:200]}")

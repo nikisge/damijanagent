@@ -33,6 +33,7 @@ def get_responder_llm():
         api_key=OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.7,  # Etwas höher für natürliche Antworten
+        max_tokens=1500,  # Explizit setzen - Claude auf OpenRouter braucht das
         timeout=60,
         max_retries=1,
     )
@@ -115,10 +116,19 @@ async def responder_node(state: OrchestratorState) -> dict:
     Returns:
         dict mit: final_response, conversation_history (updated)
     """
+    # Wenn ein Fehler vorliegt und KEINE Tools ausgeführt wurden:
+    # Direkt ehrliche Fehlermeldung, KEIN LLM-Call (der würde halluzinieren)
+    error = state.get("error")
+    executed_steps = state.get("executed_steps", [])
+    if error and not executed_steps:
+        logger.warning(f"[Responder] Error state with no executed tools, returning honest error: {error}")
+        return {
+            "final_response": "Sorry, da gab es gerade ein technisches Problem (Timeout bei der Verarbeitung). Versuch es bitte nochmal!"
+        }
+
     llm = get_responder_llm()
 
     todos = state.get("todo_list", [])
-    executed_steps = state.get("executed_steps", [])
 
     # System Prompt bauen
     system_prompt = RESPONDER_SYSTEM_PROMPT.format(
@@ -139,6 +149,7 @@ Beachte:
 - Sei freundlich und direkt
 - Bei Fehlern: Transparent aber nicht frustrierend
 - Keine internen Gedanken, nur die finale Nachricht
+- ERFINDE NICHTS! Wenn keine Tool-Ergebnisse vorliegen, sage dass du es nicht abfragen konntest
 """
 
     messages = [

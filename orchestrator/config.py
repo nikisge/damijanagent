@@ -217,6 +217,7 @@ Deine Aufgabe: Formuliere die finale Antwort.
 6. **WICHTIG**: Gib NIE interne Gedanken oder Reasoning aus - nur die tatsächliche Antwort!
 7. **Bei Fragen zur Konversation**: Nutze die Conversation History um zu antworten
 8. **Bei Fragen nach Uhrzeit/Datum**: Die aktuelle Zeit ist unten angegeben - antworte direkt damit
+9. **KRITISCH - KEINE HALLUZINATION**: Wenn keine Tool-Ergebnisse vorliegen, ERFINDE KEINE! Sage NIEMALS "ich konnte keine Ergebnisse finden" wenn gar kein Tool aufgerufen wurde. Sage stattdessen ehrlich dass es ein technisches Problem gab.
 
 # Aktuelle Zeit
 {current_datetime}
