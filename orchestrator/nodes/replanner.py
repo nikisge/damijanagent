@@ -7,6 +7,7 @@ Der Replanner wird aufgerufen wenn:
 - Der Plan angepasst werden muss
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -101,7 +102,7 @@ def format_steps_for_prompt(steps: list) -> str:
     return "\n".join(lines)
 
 
-def replanner_node(state: OrchestratorState) -> dict:
+async def replanner_node(state: OrchestratorState) -> dict:
     """
     Passt den Plan basierend auf Fehlern an.
 
@@ -130,12 +131,23 @@ def replanner_node(state: OrchestratorState) -> dict:
         HumanMessage(content=prompt),
     ]
 
-    logger.info(f"[Replanner] Calling {PLANNER_MODEL}...")
+    logger.info(f"[Replanner] Calling {PLANNER_MODEL} (async, timeout=90s)...")
     start = time.time()
     try:
-        response = llm.invoke(messages)
+        response = await asyncio.wait_for(
+            llm.ainvoke(messages),
+            timeout=90,
+        )
         duration = time.time() - start
         logger.info(f"[Replanner] LLM responded in {duration:.1f}s")
+    except asyncio.TimeoutError:
+        duration = time.time() - start
+        logger.error(f"[Replanner] LLM TIMEOUT after {duration:.1f}s (limit: 90s)")
+        return {
+            "todo_list": todos,
+            "retry_count": retry_count + 1,
+            "error": "Replanning LLM-Timeout nach 90s",
+        }
     except Exception as e:
         duration = time.time() - start
         logger.error(f"[Replanner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")

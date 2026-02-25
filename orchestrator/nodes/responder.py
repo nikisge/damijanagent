@@ -7,6 +7,7 @@ Der Responder:
 3. Generiert eine freundliche Antwort für Damijan
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -102,7 +103,7 @@ def format_conversation_history(history: list) -> str:
     return "\n".join(lines)
 
 
-def responder_node(state: OrchestratorState) -> dict:
+async def responder_node(state: OrchestratorState) -> dict:
     """
     Generiert die finale Antwort basierend auf ALLEN Ergebnissen.
 
@@ -142,12 +143,21 @@ Beachte:
         HumanMessage(content=user_prompt),
     ]
 
-    logger.info(f"[Responder] Calling {RESPONDER_MODEL}...")
+    logger.info(f"[Responder] Calling {RESPONDER_MODEL} (async, timeout=60s)...")
     start = time.time()
     try:
-        response = llm.invoke(messages)
+        response = await asyncio.wait_for(
+            llm.ainvoke(messages),
+            timeout=60,
+        )
         duration = time.time() - start
         logger.info(f"[Responder] LLM responded in {duration:.1f}s")
+    except asyncio.TimeoutError:
+        duration = time.time() - start
+        logger.error(f"[Responder] LLM TIMEOUT after {duration:.1f}s (limit: 60s)")
+        return {
+            "final_response": "Sorry, die Antwort-Generierung hat zu lange gedauert. Versuch es bitte nochmal!"
+        }
     except Exception as e:
         duration = time.time() - start
         logger.error(f"[Responder] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")

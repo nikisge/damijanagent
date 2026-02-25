@@ -7,6 +7,7 @@ Der Planner analysiert die User-Anfrage und erstellt einen Plan:
 - Was ist der Kontext für jedes Tool?
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -74,7 +75,7 @@ def format_conversation_history(history: list) -> str:
     return "\n".join(lines)
 
 
-def planner_node(state: OrchestratorState) -> dict:
+async def planner_node(state: OrchestratorState) -> dict:
     """
     Erstellt die TODO-Liste basierend auf der User-Nachricht.
 
@@ -84,12 +85,11 @@ def planner_node(state: OrchestratorState) -> dict:
     llm = get_planner_llm()
 
     # System Prompt bauen
+    conversation_history = state.get("conversation_history", [])
     system_prompt = PLANNER_SYSTEM_PROMPT.format(
         tool_descriptions=format_tool_descriptions(),
         current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        conversation_history=format_conversation_history(
-            state.get("conversation_history", [])
-        ),
+        conversation_history=format_conversation_history(conversation_history),
     )
 
     # User Message
@@ -105,13 +105,32 @@ Erstelle jetzt den Plan als JSON.
         HumanMessage(content=user_prompt),
     ]
 
-    # LLM aufrufen
-    logger.info(f"[Planner] Calling {PLANNER_MODEL}...")
+    # Diagnostik-Logging
+    api_key = OPENROUTER_API_KEY or ""
+    masked_key = api_key[:5] + "..." + api_key[-4:] if len(api_key) > 9 else "***"
+    logger.info(f"[Planner] API key: {masked_key}, model: {PLANNER_MODEL}")
+    logger.info(f"[Planner] Prompt size: {len(system_prompt)} chars, history: {len(conversation_history)} messages")
+
+    # LLM aufrufen (async mit Timeout)
+    logger.info(f"[Planner] Calling {PLANNER_MODEL} (async, timeout=90s)...")
     start = time.time()
     try:
-        response = llm.invoke(messages)
+        response = await asyncio.wait_for(
+            llm.ainvoke(messages),
+            timeout=90,
+        )
         duration = time.time() - start
         logger.info(f"[Planner] LLM responded in {duration:.1f}s")
+    except asyncio.TimeoutError:
+        duration = time.time() - start
+        logger.error(f"[Planner] LLM TIMEOUT after {duration:.1f}s (limit: 90s)")
+        return {
+            "todo_list": [],
+            "plan_reasoning": "LLM-Timeout: Keine Antwort nach 90s",
+            "needs_clarification": False,
+            "clarification_question": "",
+            "error": "LLM timeout after 90s",
+        }
     except Exception as e:
         duration = time.time() - start
         logger.error(f"[Planner] LLM FAILED after {duration:.1f}s: {type(e).__name__}: {e}")

@@ -13,6 +13,8 @@ Endpoints:
 
 import os
 import json
+import time
+import httpx
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -614,8 +616,8 @@ async def log_viewer_ui():
 @app.on_event("startup")
 async def startup_event():
     """Startup Event - Logging und Initialisierung."""
-    logger.info("🚀 LangGraph Orchestrator starting up...")
-    logger.info("📡 Endpoints available:")
+    logger.info("LangGraph Orchestrator starting up...")
+    logger.info("Endpoints available:")
     logger.info("   POST /orchestrate - Main endpoint for N8N")
     logger.info("   POST /orchestrate/debug - Debug endpoint with full state")
     logger.info("   GET /health - Health check")
@@ -623,6 +625,37 @@ async def startup_event():
     logger.info("   GET /logs/runs - Recent runs API")
     logger.info("   GET /logs/runs/{id} - Run details API")
     logger.info("   GET /logs/stats - Tool statistics API")
+
+    # OpenRouter Health-Check
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key:
+        logger.error("OPENROUTER_API_KEY not set! LLM calls will fail.")
+    else:
+        masked_key = api_key[:5] + "..." + api_key[-4:] if len(api_key) > 9 else "***"
+        logger.info(f"OpenRouter API key: {masked_key}")
+        try:
+            start = time.time()
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": os.getenv("PLANNER_MODEL", "anthropic/claude-sonnet-4-20250514"),
+                        "messages": [{"role": "user", "content": "Hi"}],
+                        "max_tokens": 5,
+                    },
+                )
+            duration = time.time() - start
+            if resp.status_code == 200:
+                logger.info(f"OpenRouter health check: OK ({duration:.1f}s)")
+            else:
+                logger.error(f"OpenRouter health check: FAILED status={resp.status_code} ({duration:.1f}s) body={resp.text[:200]}")
+        except Exception as e:
+            duration = time.time() - start
+            logger.error(f"OpenRouter health check: NOT REACHABLE after {duration:.1f}s - {type(e).__name__}: {e}")
 
 
 # ============================================

@@ -89,13 +89,13 @@ def _cleanup_logger(run_id: str):
 # Logged Node Wrappers
 # ============================================
 
-def planner_node(state: OrchestratorState) -> dict:
+async def planner_node(state: OrchestratorState) -> dict:
     """Planner mit Logging."""
     logger = _get_logger(state.get("run_id"))
     logger.planner_start(state.get("user_message", ""))
 
     start = time.time()
-    result = _planner_node(state)
+    result = await _planner_node(state)
     duration = int((time.time() - start) * 1000)
 
     todos = result.get("todo_list", [])
@@ -172,13 +172,13 @@ def after_planner_check(state: OrchestratorState) -> str:
     return decision
 
 
-def responder_node(state: OrchestratorState) -> dict:
+async def responder_node(state: OrchestratorState) -> dict:
     """Responder mit Logging."""
     logger = _get_logger(state.get("run_id"))
     logger.responder_generating()
 
     start = time.time()
-    result = _responder_node(state)
+    result = await _responder_node(state)
     duration = int((time.time() - start) * 1000)
 
     response = result.get("final_response", "")
@@ -195,13 +195,13 @@ def clarify_node(state: OrchestratorState) -> dict:
     return _clarify_node(state)
 
 
-def replanner_node(state: OrchestratorState) -> dict:
+async def replanner_node(state: OrchestratorState) -> dict:
     """Replanner mit Logging."""
     logger = _get_logger(state.get("run_id"))
     failed_todos = [t for t in state.get("todo_list", []) if t.status == "failed"]
     logger.replanner_start(failed_todos)
 
-    result = _replanner_node(state)
+    result = await _replanner_node(state)
     return result
 
 
